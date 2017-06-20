@@ -3,6 +3,35 @@
     This script creates functions for general use by other scripts and users
 #>
 
+function SetGeneralRoot {
+    <#
+        .synopsis
+        this function sets a script variable for the root folder of General functions.
+    #>
+    
+    [System.Reflection.Assembly]::LoadWithPartialName("System.windows.forms") | Out-Null
+    if (Test-Path "$script:GeneralRoot\GeneralFunctions.ps1") {
+        return
+    } elseif (Test-Path "$($MyInvocation.PSScriptRoot)\GeneralFunctions.ps1") {
+        $script:GeneralRoot = $MyInvocation.PSScriptRoot
+    } elseif (Test-Path "$($MyInvocation.InvocationName)\GeneralFunctions.ps1") {
+        $script:GeneralRoot = $MyInvocation.InvocationName
+    } elseif (Test-Path "$($MyInvocation.PSScriptRoot)\General\GeneralFunctions.ps1") {
+        $script:GeneralRoot = "$($MyInvocation.PSScriptRoot)\General"
+    } elseif (Test-Path "$($MyInvocation.InvocationName)\General\GeneralFunctions.ps1") {
+        $script:GeneralRoot = "$($MyInvocation.InvocationName)\General"
+    } elseif (Test-Path "$(Get-Location | select -ExpandProperty Path)\GeneralFunctions.ps1") {
+        $script:GeneralRoot = Get-Location | select -ExpandProperty Path
+    } elseif (Test-Path "$(Get-Location | select -ExpandProperty Path)\GeneralFunctions.ps1") {
+        $script:GeneralRoot = Split-Path (Get-Location | select -ExpandProperty Path)
+    } else {
+        $f = New-Object System.Windows.Forms.FolderBrowserDialog;
+        (New-Object -ComObject Wscript.Shell).Popup("The script needs to determine the root directory in order to proceed. Please choose the directory which contains the GeneralFunctions.ps1 script in the next window.") | Out-Null
+        $f.ShowDialog() | Out-Null
+        $script:GeneralRoot = $f.SelectedPath
+    }
+}
+
 function GetFile {
     <#  Opens a dialog box to allow a user to select a file;
         
@@ -20,46 +49,6 @@ function GetFile {
     $f.ShowDialog() | Out-Null
     $f
 }
-
-function GetRoot {
-    if ($MyInvocation.PSScriptRoot -eq $null) {
-        $script:ScriptPath = Split-Path $MyInvocation.InvocationName -Parent
-    } else {
-        $script:ScriptPath = $MyInvocation.PSScriptRoot
-    }
-    return $script:ScriptPath
-}
-
-
-function ModuleChecker {
-    # This function checks if a module is installed
-    [CmdletBinding()]
-    Param (
-        [Parameter(Mandatory=$true,HelpMessage='The name of the module as you would expect to see on get-module')]
-        [Alias('ModuleName')]
-        [String]$ModName,
-
-        [Parameter(HelpMessage='If true, most messages will be supressed. Use this if you want less verbose output')]
-        [Boolean]$SuppressMessages=$false
-    )
-
-    # setting error action
-    $ErrorActionPreference = 'Stop'
-
-    if (Get-Module -Name $ModName) {
-        if (-not $SuppressMessages) {
-            Write-Host "`n$ModName Module loaded." -BackgroundColor Black -ForegroundColor Green
-        }
-    } elseif (Get-Module -ListAvailable -Name $ModName) {
-        if (-not $SuppressMessages) {Write-Host "`nLoading $ModName Module..." -NoNewline -BackgroundColor Black -ForegroundColor Cyan}
-        Import-Module -Name $ModName 3> $null | Out-Null
-        if (-not $SuppressMessages) {Write-Host "Done!" -BackgroundColor Black -ForegroundColor Green}
-    } else {
-        $ModName = $ModName+' module not found. Please download and/or install it before proceeding'
-        throw $ModName
-    }
-}
-
 
 function NewADUserFromExisting {
     Param(
@@ -302,7 +291,7 @@ function SendMessage {
         [System.Management.Automation.PSCredential]$Cred,
 
         [Parameter(Mandatory=$true,HelpMessage='the path and filename to the message you would like to send')]
-        [String]$Path,
+        [String]$Path=(GetFile -Prompt "Please choose the html file with the message you would like to send").Filename,
 
         [Parameter(Mandatory=$true,HelpMessage='The address to which you want to send the message')]
         [String]$To,
