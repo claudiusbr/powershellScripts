@@ -52,6 +52,7 @@ function ModuleChecker {
     }
 }
 
+
 function ConnectToExchangeOnline {
     [CmdletBinding()]
     Param(
@@ -85,6 +86,7 @@ function ConnectToExchangeOnline {
         throw $_
     }
 }
+
 
 function ConnectToMSOnline {
     # This script connects you to MSOnline (Azure Active Directory)
@@ -120,6 +122,7 @@ function ConnectToMSOnline {
     Write-Host
 }
 
+
 function ConnectToSharepointOnline {
     [CmdletBinding()]
     Param(
@@ -136,16 +139,9 @@ function ConnectToSharepointOnline {
     )
     # Add SPOnline Module
     try {
-        if ($MyInvocation.PSScriptRoot -eq $null) {
-            $script:ScriptPath = Split-Path $MyInvocation.InvocationName -Parent
-        } else {
-            $script:ScriptPath = $MyInvocation.PSScriptRoot
-        }
-
-        . $script:ScriptPath\GeneralFunctions.ps1
-
         ModuleChecker -ModName 'Microsoft.Online.SharePoint.PowerShell' -SuppressMessages $SuppressMessages
     } catch {
+        Write-Warning "Error trying to load Sharepoint Powershell Module"
         throw $_
     }
 
