@@ -14,7 +14,7 @@
 )
 
 $ADSession = New-PSSession -ComputerName $ServerName -Credential $ADCred
-Invoke-Command -Session $ADSession -FilePath .\GeneralFunctions.ps1
+Invoke-Command -Session $ADSession -FilePath "$GeneralRoot\GeneralFunctions.ps1"
 
 Describe 'NewAduserFromExisting Integration Test' {
     It 'Creates a new test-user' {
