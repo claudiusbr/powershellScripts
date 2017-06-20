@@ -9,10 +9,57 @@ function GetFile {
         Returns: a System.Windows.Forms.OpenFileDialog object
             with a reference to the file;
     #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(HelpMessage='Any warnings you might want to issue to the user. This is optional.')]
+        [String]$Prompt
+    )
+
+    if (-not ($Prompt -eq $null -or ($Prompt -eq ''))) {(New-Object -ComObject Wscript.Shell).Popup($Prompt) | Out-Null}
     $f = New-Object System.Windows.Forms.OpenFileDialog;
     $f.ShowDialog() | Out-Null
     $f
 }
+
+function GetRoot {
+    if ($MyInvocation.PSScriptRoot -eq $null) {
+        $script:ScriptPath = Split-Path $MyInvocation.InvocationName -Parent
+    } else {
+        $script:ScriptPath = $MyInvocation.PSScriptRoot
+    }
+    return $script:ScriptPath
+}
+
+
+function ModuleChecker {
+    # This function checks if a module is installed
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory=$true,HelpMessage='The name of the module as you would expect to see on get-module')]
+        [Alias('ModuleName')]
+        [String]$ModName,
+
+        [Parameter(HelpMessage='If true, most messages will be supressed. Use this if you want less verbose output')]
+        [Boolean]$SuppressMessages=$false
+    )
+
+    # setting error action
+    $ErrorActionPreference = 'Stop'
+
+    if (Get-Module -Name $ModName) {
+        if (-not $SuppressMessages) {
+            Write-Host "`n$ModName Module loaded." -BackgroundColor Black -ForegroundColor Green
+        }
+    } elseif (Get-Module -ListAvailable -Name $ModName) {
+        if (-not $SuppressMessages) {Write-Host "`nLoading $ModName Module..." -NoNewline -BackgroundColor Black -ForegroundColor Cyan}
+        Import-Module -Name $ModName 3> $null | Out-Null
+        if (-not $SuppressMessages) {Write-Host "Done!" -BackgroundColor Black -ForegroundColor Green}
+    } else {
+        $ModName = $ModName+' module not found. Please download and/or install it before proceeding'
+        throw $ModName
+    }
+}
+
 
 function NewADUserFromExisting {
     Param(
@@ -239,4 +286,43 @@ function TestProvision {
         }
     }
     return $false
+}
+
+function SendMessage {
+    <# 
+     .SYNOPSIS
+     This script takes an html message and sends it to the 'To' address in the field
+     You need the proper permissions on the mailbox from which you are sending the 
+     messages
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$true,HelpMessage='Your Admin Office 365 credentials')]
+        [Alias('Credentials')]
+        [System.Management.Automation.PSCredential]$Cred,
+
+        [Parameter(Mandatory=$true,HelpMessage='the path and filename to the message you would like to send')]
+        [String]$Path,
+
+        [Parameter(Mandatory=$true,HelpMessage='The address to which you want to send the message')]
+        [String]$To,
+
+        [Parameter(Mandatory=$true,HelpMessage='The email from which you want to send the message')]
+        [String]$From,
+
+        [Parameter(Mandatory=$true,HelpMessage='The subject of the email to send out')]
+        [String]$Subject,
+
+        [Parameter(HelpMessage='[Optional] If you want it cc''d to anyone')]
+        [String[]]$CC
+    )
+
+
+    $Body = ""
+    Get-Content -Path $Path | ForEach-Object {$Body += $_}
+    Send-MailMessage -To $To -Subject $Subject `
+        -From "$From" -Cc $CC -BodyAsHtml:$true `
+        -SmtpServer 'smtp.office365.com' -Port 587 -UseSsl:$true `
+        -Credential $Cred -Body $Body
+    Write-Host "Message sent to $To." -BackgroundColor Black -ForegroundColor Green
 }
