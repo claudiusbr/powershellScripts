@@ -92,9 +92,9 @@ function NewADUserFromExisting {
     #>
 
     if ($Email -eq $null -or ($Email -eq '')) {
-        $Email = MakeEmail -FirstName $FirstName -LastName $LastName -Domain $Domain
+        $Email = MakeEmailAddress -FirstName $FirstName -LastName $LastName -Domain $Domain
     } else {
-        $Email = ValidateEmail -Email $Email
+        $Email = ValidateEmailAddress -Email $Email
     }
     
     $OUInstance = Get-ADUser -Identity $OldUser -Properties MemberOf,CannotChangePassword,PasswordNeverExpires
@@ -138,7 +138,7 @@ function GetParentOrganizationalUnit {
     [ADSI](([ADSI]"LDAP://$($ExistingUser.DistinguishedName)").Parent)
 }
 
-function ValidateEmail {
+function ValidateEmailAddress {
     Param(
         [Parameter(Mandatory=$true,HelpMessage="The user's email address in the format <mailboxName>@<domain>")]
         [ValidateNotNullOrEmpty()]
@@ -161,7 +161,7 @@ function ValidateEmail {
     }
 }
 
-function MakeEmail {
+function MakeEmailAddress {
     Param(
         [Parameter(Mandatory=$true,HelpMessage="The user's first name")]
         [ValidateNotNullOrEmpty()]
@@ -176,7 +176,7 @@ function MakeEmail {
     )
     <#
         .Synopsis
-        Make an email in the format <firstname>[.lastName]@<domain>
+        Make an email address in the format <firstname>[.lastName]@<domain>
     #>
 
     $Domain = $Domain.ToLower() -replace '\s',''
@@ -314,4 +314,25 @@ function SendMessage {
         -SmtpServer 'smtp.office365.com' -Port 587 -UseSsl:$true `
         -Credential $Cred -Body $Body
     Write-Host "Message sent to $To." -BackgroundColor Black -ForegroundColor Green
+}
+
+function MakeHtmlFromTemplate {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$true,HelpMessage="The path to the file containing the message template")]
+        [Alias("Path")]
+        [String]$PathToTemplate=(GetFile -Prompt 'Please find the file containing the message template. Make sure that all the placeholders are in the format "\$_[a-z]+"').Filename,
+
+        [Parameter(Mandatory=$true,HelpMessage="A hash table containing the placeholder names and the values by which they should be replaced")]
+        [System.Collections.Hashtable]$Values
+    )
+    <#
+        .Synopsis
+        This function takes in a template with placeholders, replaces the placeholders with 
+        arguments provided, then returns html output.
+    #>
+
+    Get-Content -Path $PathToTemplate | ForEach-Object {$Body += $_}
+    $Values.GetEnumerator() | ForEach-Object {$Body = $Body.Replace($_.key,$_.value)}
+    $Body
 }
