@@ -10,25 +10,25 @@ function SetGeneralRoot {
     #>
     
     [System.Reflection.Assembly]::LoadWithPartialName("System.windows.forms") | Out-Null
-    if (Test-Path "$script:GeneralRoot\GeneralFunctions.ps1") {
+    if (Test-Path "$global:GeneralRoot\GeneralFunctions.psm1") {
         return
-    } elseif (Test-Path "$($MyInvocation.PSScriptRoot)\GeneralFunctions.ps1") {
-        $script:GeneralRoot = $MyInvocation.PSScriptRoot
-    } elseif (Test-Path "$($MyInvocation.InvocationName)\GeneralFunctions.ps1") {
-        $script:GeneralRoot = $MyInvocation.InvocationName
-    } elseif (Test-Path "$($MyInvocation.PSScriptRoot)\General\GeneralFunctions.ps1") {
-        $script:GeneralRoot = "$($MyInvocation.PSScriptRoot)\General"
-    } elseif (Test-Path "$($MyInvocation.InvocationName)\General\GeneralFunctions.ps1") {
-        $script:GeneralRoot = "$($MyInvocation.InvocationName)\General"
-    } elseif (Test-Path "$(Get-Location | select -ExpandProperty Path)\GeneralFunctions.ps1") {
-        $script:GeneralRoot = Get-Location | select -ExpandProperty Path
-    } elseif (Test-Path "$(Get-Location | select -ExpandProperty Path)\GeneralFunctions.ps1") {
-        $script:GeneralRoot = Split-Path (Get-Location | select -ExpandProperty Path)
+    } elseif (Test-Path "$($MyInvocation.PSScriptRoot)\GeneralFunctions.psm1") {
+        $global:GeneralRoot = $MyInvocation.PSScriptRoot
+    } elseif (Test-Path "$($MyInvocation.InvocationName)\GeneralFunctions.psm1") {
+        $global:GeneralRoot = $MyInvocation.InvocationName
+    } elseif (Test-Path "$($MyInvocation.PSScriptRoot)\General\GeneralFunctions.psm1") {
+        $global:GeneralRoot = "$($MyInvocation.PSScriptRoot)\General"
+    } elseif (Test-Path "$($MyInvocation.InvocationName)\General\GeneralFunctions.psm1") {
+        $global:GeneralRoot = "$($MyInvocation.InvocationName)\General"
+    } elseif (Test-Path "$(Get-Location | select -ExpandProperty Path)\GeneralFunctions.psm1") {
+        $global:GeneralRoot = Get-Location | select -ExpandProperty Path
+    } elseif (Test-Path "$(Get-Location | select -ExpandProperty Path)\GeneralFunctions.psm1") {
+        $global:GeneralRoot = Split-Path (Get-Location | select -ExpandProperty Path)
     } else {
         $f = New-Object System.Windows.Forms.FolderBrowserDialog;
-        (New-Object -ComObject Wscript.Shell).Popup("The script needs to determine the root directory in order to proceed. Please choose the directory which contains the GeneralFunctions.ps1 script in the next window.") | Out-Null
+        (New-Object -ComObject Wscript.Shell).Popup("The script needs to determine the root directory in order to proceed. Please choose the directory which contains the GeneralFunctions.psm1 script in the next window.") | Out-Null
         $f.ShowDialog() | Out-Null
-        $script:GeneralRoot = $f.SelectedPath
+        $global:GeneralRoot = $f.SelectedPath
     }
 }
 

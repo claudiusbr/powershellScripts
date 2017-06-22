@@ -13,10 +13,20 @@
 
 )
 
+$ScriptContents = Get-Content -Path "$GeneralRoot\GeneralFunctions.psm1"
+$ModuleName = 'GeneralFunctions'
+$FileName = "$ModuleName.psm1"
+
 $ADSession = New-PSSession -ComputerName $ServerName -Credential $ADCred
-Invoke-Command -Session $ADSession -FilePath "$GeneralRoot\GeneralFunctions.ps1"
 
 Describe 'NewAduserFromExisting Integration Test' {
+    BeforeAll {
+        Invoke-Command -Session $ADSession -ScriptBlock {
+            Param($ModuleContents,$FileName)
+            Set-Content -Path $FileName -Value $ModuleContents -Force
+            Import-Module -Name ".\$FileName"
+        } -ArgumentList ($ScriptContents,$FileName)
+    }
     It 'Creates a new test-user' {
         $script:user = Invoke-Command -Session $ADSession -ScriptBlock {
             Param($TemplateUser)
@@ -49,6 +59,16 @@ Describe 'NewAduserFromExisting Integration Test' {
         Invoke-Command -Session $ADSession -ScriptBlock {
             Remove-ADUser testunit -Confirm:$false
         }
-        Remove-PSSession $ADSession
+    }
+
+    AfterAll {
+        Invoke-Command -Session $ADSession -ScriptBlock {
+            Param($FileName,$ModuleName)
+            Remove-Module -Name $ModuleName
+            Remove-Item -Path ".\$FileName" -Force
+        } -ArgumentList ($FileName,$ModuleName)
     }
 }
+
+# Do not leave the session lingering
+Remove-PSSession $ADSession
