@@ -284,46 +284,77 @@ function SendMessage {
      You need the proper permissions on the mailbox from which you are sending the 
      messages
     #>
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName='Path')]
     Param(
-        [Parameter(Mandatory=$true,HelpMessage='Your Admin Office 365 credentials')]
+        [Parameter(Mandatory, HelpMessage='Your Admin Office 365 credentials',ParameterSetName='Path')]
+        [Parameter(Mandatory, ParameterSetName='Msg')]
         [Alias('Credentials')]
         [System.Management.Automation.PSCredential]$Cred,
 
-        [Parameter(Mandatory=$true,HelpMessage='the path and filename to the message you would like to send')]
-        [String]$Path=(GetFile -Prompt "Please choose the html file with the message you would like to send").Filename,
+        [Parameter(Mandatory, ParameterSetName='Path',
+            HelpMessage='the path and filename to the message you would like to send')]
+        [String]$Path<#=(GetFile -Prompt "Please choose the file with the message you would like to send").Filename#>,
 
-        [Parameter(Mandatory=$true,HelpMessage='The address to which you want to send the message')]
-        [String]$To,
+        [Parameter(Mandatory, HelpMessage="A string containing the message which you want to send",
+            ParameterSetName='Msg')]
+        [String]$Msg,
 
-        [Parameter(Mandatory=$true,HelpMessage='The email from which you want to send the message')]
+        [Parameter(Mandatory,
+            HelpMessage='The address to which you want to send the message',
+            ParameterSetName='Path')]
+        [Parameter(Mandatory,
+            ParameterSetName='Msg')]
+        [String[]]$To,
+
+        [Parameter(Mandatory,
+            HelpMessage='The email from which you want to send the message',
+            ParameterSetName='Path')]
+        [Parameter(Mandatory,
+            ParameterSetName='Msg')]
         [String]$From,
 
-        [Parameter(Mandatory=$true,HelpMessage='The subject of the email to send out')]
+        [Parameter(Mandatory, HelpMessage='The subject of the email to send out',
+            ParameterSetName='Path')]
+        [Parameter(Mandatory,ParameterSetName='Msg')]
+        [ValidateNotNullOrEmpty()]
         [String]$Subject,
 
-        [Parameter(HelpMessage='[Optional] If you want it cc''d to anyone')]
+        [Parameter(HelpMessage='[Optional] If you want it cc''d to anyone',
+            ParameterSetName='Path')]
+        [Parameter(ParameterSetName='Msg')]
         [String[]]$CC
     )
 
 
     $Body = ""
-    Get-Content -Path $Path | ForEach-Object {$Body += $_}
-    Send-MailMessage -To $To -Subject $Subject `
-        -From "$From" -Cc $CC -BodyAsHtml:$true `
-        -SmtpServer 'smtp.office365.com' -Port 587 -UseSsl:$true `
-        -Credential $Cred -Body $Body
+    if ($PSCmdlet.ParameterSetName -eq 'Path') {
+        Get-Content -Path $Path | ForEach-Object {$Body += $_}
+    } else {
+        $Body = $Msg
+    }
+
+    if ($CC.Count -eq 0 -or ($CC[0] -eq '')) {
+        Send-MailMessage -To $To -Subject $Subject `
+            -From "$From" -BodyAsHtml:$true `
+            -SmtpServer 'smtp.office365.com' -Port 587 -UseSsl:$true `
+            -Credential $Cred -Body $Body -Encoding UTF8
+    } else {
+        Send-MailMessage -To $To -Subject $Subject `
+            -From "$From" -Cc $CC -BodyAsHtml:$true `
+            -SmtpServer 'smtp.office365.com' -Port 587 -UseSsl:$true `
+            -Credential $Cred -Body $Body -Encoding UTF8
+    }
+
     Write-Host "Message sent to $To." -BackgroundColor Black -ForegroundColor Green
 }
 
 function MakeHtmlFromTemplate {
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory=$true,HelpMessage="The path to the file containing the message template")]
-        [Alias("Path")]
+        [Parameter(HelpMessage="The path to the file containing the message template")]
         [String]$PathToTemplate=(GetFile -Prompt 'Please find the file containing the message template. Make sure that all the placeholders are in the format "\$_[a-z]+"').Filename,
 
-        [Parameter(Mandatory=$true,HelpMessage="A hash table containing the placeholder names and the values by which they should be replaced")]
+        [Parameter(Mandatory,HelpMessage="A hash table containing the placeholder names and the values by which they should be replaced")]
         [System.Collections.Hashtable]$Values
     )
     <#
@@ -332,6 +363,7 @@ function MakeHtmlFromTemplate {
         arguments provided, then returns html output.
     #>
 
+    $Body = ""
     Get-Content -Path $PathToTemplate | ForEach-Object {$Body += $_}
     $Values.GetEnumerator() | ForEach-Object {$Body = $Body.Replace($_.key,$_.value)}
     $Body
