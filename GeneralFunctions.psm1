@@ -368,3 +368,47 @@ function MakeHtmlFromTemplate {
     $Values.GetEnumerator() | ForEach-Object {$Body = $Body.Replace($_.key,$_.value)}
     $Body
 }
+
+function GiveMailboxPermissionsWithSMA {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory,HelpMessage='The name of the security group (e.g. SMA <Mailbox>)')]
+        [String]$SMAName,
+        
+        [Parameter(Mandatory,HelpMessage="The email domain, in the format <string1.string2[.stringN]*>")]
+        [ValidateNotNullOrEmpty()]
+        [String]$Domain,
+
+        [Parameter(Mandatory,HelpMessage="The member or members who will be part of the SMA")]
+        [ValidateNotNullOrEmpty()]
+        [String[]]$SMAMembers,
+        
+        [Parameter(Mandatory,HelpMessage="The mailbox to which the users need to gain access")]
+        [ValidateNotNullOrEmpty()]
+        [String]$Mailbox,
+
+        [Parameter(HelpMessage="If the SMA should have ReadOnly access, set to true. Default false")]
+        [ValidateNotNullOrEmpty()]
+        [Boolean]$ReadOnly=$false
+    )
+    <#
+        .Synopsis
+        This function creates an SMA, adds members to it, then gives both 
+        Send As and Full Access permission to the selected mailbox by 
+        adding the SMA to it's permissions and recipient permissions.
+    #>
+
+    if (-not ($SMAName.ToLower().Contains("sma"))) {
+        $SMAName = "SMA $SMAName"
+    }
+
+    $Alias = $SMAName.Replace(" ","")
+    $SMAEmail = MakeEmailAddress -FirstName $Alias -Domain $Domain
+
+    New-DistributionGroup -Name $SMAName -Alias $Alias -PrimarySmtpAddress $SMAEmail -Members $SMAMembers -Type 'Security'
+    Set-DistributionGroup -Identity $SMAEmail -HiddenFromAddressListsEnabled $true
+    Add-MailboxPermission -Identity $Mailbox -AccessRights FullAccess -User $SMAName
+    if (-not $ReadOnly) {
+        Add-RecipientPermission -Identity $Mailbox -AccessRights SendAs -Trustee $SMAEmail
+    }
+}
