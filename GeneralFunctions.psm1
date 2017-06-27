@@ -412,3 +412,33 @@ function GiveMailboxPermissionsWithSMA {
         Add-RecipientPermission -Identity $Mailbox -AccessRights SendAs -Trustee $SMAEmail
     }
 }
+
+
+function TestSPAccess {
+    <#
+        .Synopsis
+        This function takes in a legitimate and test users' email addresses and adds
+        the test user to exactly the same groups as the test one. This allows you to
+        test what exactly the legitimate user can see on Sharepoint to make sure that
+        they have the righ access.
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(HelpMessage='The legitimate user''s O365 email')]
+        [String]$User=(Read-Host -Prompt 'Please enter the user''s O365 email address'),
+
+        [Parameter(HelpMessage='The test user''s O365 email')]
+        [String]$TestUser=(Read-Host -Prompt 'Please enter the user''s O365 email address'),
+
+        [Parameter(Mandatory=$true,HelpMessage="The URL for your Sharepoint team site")]
+        [ValidateNotNullOrEmpty()]
+        [String] $SPSite
+
+    )
+
+    # remove test user from all groups it is currently in
+    Get-SPOUser -Site $SPSite -LoginName $TestUser | select -ExpandProperty groups | % {Remove-SPOUser -Site $SPSite -LoginName $TestUser -Group $_}
+
+    # add test user to the groups of the chosen user
+    Get-SPOUser -Site $SPSite -LoginName $User | select -ExpandProperty groups | % {Add-SPOUser -Site $SPSite -LoginName $TestUser -Group $_}
+}
