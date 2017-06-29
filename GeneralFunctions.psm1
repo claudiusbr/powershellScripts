@@ -442,3 +442,22 @@ function TestSPAccess {
     # add test user to the groups of the chosen user
     Get-SPOUser -Site $SPSite -LoginName $User | select -ExpandProperty groups | % {Add-SPOUser -Site $SPSite -LoginName $TestUser -Group $_}
 }
+
+
+function GetUserDGMembership {
+    <#
+        .synopsis
+        This function returns all the distribution groups of which a user is a member
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory,HelpMessage='The user''s Office 365 account')]
+        [String]$UserEmail
+    )
+
+    Get-DistributionGroup -ResultSize Unlimited | Where-Object {
+        Get-DistributionGroupMember -Identity $_.PrimarySmtpAddress -ResultSize Unlimited | Where-Object {
+            $_.PrimarySmtpAddress -eq $UserEmail
+        }
+    }
+}
