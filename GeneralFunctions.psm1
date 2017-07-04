@@ -50,6 +50,34 @@ function GetFile {
     $f
 }
 
+function LoadModuleIntoSession {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$true,HelpMessage="An open session with the server running the Active Directory")]
+        [ValidateNotNullOrEmpty()]
+        [System.Management.Automation.Runspaces.PSSession]$ADSession
+    )
+    <#
+        .synopsis
+        This function takes an open session (with the machine which has the ActiveDirectory module) 
+        and loads the ActiveDirectory and GeneralFunctions modules into it. It returns the session
+        with the modules now loaded.
+    #>
+    Invoke-Command -Session $ADSession -ScriptBlock {Import-Module -Name ActiveDirectory}
+
+    $ScriptContents = Get-Content -Path "$Global:GeneralRoot\GeneralFunctions.psm1"
+    $ModuleName = 'GeneralFunctions'
+    $FileName = "$ModuleName.psm1"
+    
+    Invoke-Command -Session $ADSession -ScriptBlock {
+        Param($ScriptContents,$FileName)
+        Set-Content -Path $FileName -Value $ScriptContents -Force
+        Import-Module -Name ".\$FileName"
+    } -ArgumentList ($ScriptContents,$FileName)
+
+    $ADSession
+}
+
 function NewADUserFromExisting {
     Param(
         [Parameter(Mandatory=$True,HelpMessage="The SAM Account Name for this user")]
@@ -123,6 +151,55 @@ function NewADUserFromExisting {
         Add-ADGroupMember -Identity ($_.split(',').substring(3)[0]) -Members $PreWin2kLogon
     }
 }
+
+
+function NewADUserFromExistingWithHashTable {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory,HelpMessage='A HashTable loaded with the details of the new users')]
+        [PSCustomObject]$HashTable,
+
+        [Parameter(Mandatory,HelpMessage='The name of your organization')]
+        [String]$Organization
+    )
+
+    <#
+        .Synopsis
+        This function takes in a HashTable loaded with new users' details and creates them in the active directory
+    #>
+
+    $HashTable | ForEach-Object {
+        NewADUserFromExisting -PreWin2kLogon $_.ADLogonID `
+            -FirstName $_.FirstName `
+            -LastName $_.LastName `
+            -Email $_.Email `
+            -Password (ConvertTo-SecureString -AsPlainText $_.ADPassword -Force) `
+            -OldUser $_.CloneFromUser `
+            -RoleTitle $_.Role `
+            -Organization $Organization `
+            -Department $_.Department `
+    }
+}
+
+function NewADUserFromExistingWithCsv {
+    [CmdletBinding()]
+    Param(
+        [Parameter(HelpMessage='The path to the csv file with the user''s details')]
+        [String]$File=(GetFile),
+
+        [Parameter(Mandatory,HelpMessage='The name of your organization')]
+        [String]$Organization
+    )
+
+    <#
+        .Synopsis
+        This function takes the new user parameters from a file and calls the 
+        NewADUserFromExisting-WithHashTable function on it
+    #>
+
+    NewADUserFromExistingWithHashTable -HashTable (Import-Csv -Path $File) -Organization $Organization
+}
+
 
 function GetParentOrganizationalUnit {
     Param (
