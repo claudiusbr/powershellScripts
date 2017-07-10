@@ -344,8 +344,8 @@ function TestProvision {
     #>
     for ($Count = 1; $Count -le $NumberOfAttempts; $Count++) {
         if ((Invoke-Command -ScriptBlock $Cmdlet) -eq $null) {
-            Write-Host "Attempt number $Count " -NoNewline
-            Write-Host 'Failed. Will try again in 1 minute.'
+            Write-Host "`nAttempt number $Count " -NoNewline
+            Write-Host 'Failed. Will try again in 1 minute.' -NoNewline
             Start-Sleep -Seconds $SecondsBetweenAttempts
         } else {
             return $true
