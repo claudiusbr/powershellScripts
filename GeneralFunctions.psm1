@@ -148,8 +148,11 @@ function NewADUserFromExisting {
 
     ## Add user to old user's membership groups
     Select-Object -InputObject $OUInstance -ExpandProperty memberof | ForEach-Object {
-        Add-ADGroupMember -Identity ($_.split(',').substring(3)[0]) -Members $PreWin2kLogon
-    }
+        $Group = $_.split(',').substring(3)[0]    
+        if (-not (Get-ADGroupMember -Identity $Group | Select-Object -ExpandProperty SamAccountName).Contains($PreWin2kLogon)) {
+            Add-ADGroupMember -Identity $Group -Members $PreWin2kLogon -ErrorAction Continue
+        }
+    } -ErrorAction Continue
 }
 
 
@@ -293,7 +296,7 @@ function AssignLicences {
 
         [Parameter(Mandatory=$true)]
         [ValidateNotNullOrEmpty()]
-        [ValidateSet("Basic","Statistics")]
+        [ValidateSet("Basic","SharepointOnly")]
         [String]$LicenceType
     )
     <#
@@ -312,7 +315,7 @@ function AssignLicences {
     if ((Get-MsolUser -UserPrincipalName $Email | select -ExpandProperty isLicensed) -eq $false) { 
         switch($LicenceType) {
             "Basic" {$Licences = PrepareBasicLicences; continue}
-            "Statistics" {$Licences = PrepareStatisticsLicences; continue}
+            "SharepointOnly" {$Licences = PrepareSharepointOnlyLicences; continue}
         }
 
         $Licences | ForEach-Object { Set-MsolUserLicense -UserPrincipalName $Email `
@@ -345,7 +348,7 @@ function TestProvision {
     for ($Count = 1; $Count -le $NumberOfAttempts; $Count++) {
         if ((Invoke-Command -ScriptBlock $Cmdlet) -eq $null) {
             Write-Host "`nAttempt number $Count " -NoNewline
-            Write-Host 'Failed. Will try again in 1 minute.' -NoNewline
+            Write-Host "Failed. Will try again in $SecondsBetweenAttempts seconds." -NoNewline
             Start-Sleep -Seconds $SecondsBetweenAttempts
         } else {
             return $true
