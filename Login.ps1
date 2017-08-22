@@ -19,7 +19,7 @@ function LoginO365 {
 
     ConnectToExchangeOnline $Cred
     ConnectToMSOnline $Cred
-    ConnectToSharepointOnline -Cred $Cred -SPAdminSite $SPAdSite
+    ConnectToSharepointOnline -Cred $Cred -SPAdminSite $SPAdminSite
 }
 
 
