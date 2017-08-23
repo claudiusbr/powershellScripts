@@ -497,8 +497,8 @@ function GiveMailboxPermissionsWithSMA {
 function TestSPAccess {
     <#
         .Synopsis
-        This function takes in a legitimate and test users' email addresses and adds
-        the test user to exactly the same groups as the test one. This allows you to
+        This function takes in a "legitimate" and "test" users' email addresses and adds
+        the test user to exactly the same groups as the legitimate one. This allows you to
         test what exactly the legitimate user can see on Sharepoint to make sure that
         they have the righ access.
     #>
@@ -540,4 +540,26 @@ function GetUserDGMembership {
             $_.PrimarySmtpAddress -eq $UserEmail
         }
     }
+}
+
+function BlockOffice365Account {
+    [CmdletBinding()]
+    Param(    
+        [Parameter(Mandatory,HelpMessage='Your Admin Office 365 credentials')]
+        [ValidateNotNullOrEmpty()]
+        [System.Management.Automation.PSCredential]$Cred,
+
+        [Parameter(Mandatory,HelpMessage='The user''s office 365 account id')]
+        [String]$Email,
+
+        [Parameter(HelpMessage='Set to true if the session is already connected to Azure Active Directory. False by default.')]
+        [Boolean]$AlreadyConnected=$false
+    )
+    
+    if(-not $AlreadyConnected) {
+        ConnectToMSOnline -Cred $Cred
+    }
+
+    Set-MsolUser -UserPrincipalName $Email -BlockCredential $true -ErrorAction Stop
+    Write-Host "$Email is now blocked."
 }
