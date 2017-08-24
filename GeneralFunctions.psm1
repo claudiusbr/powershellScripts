@@ -51,18 +51,18 @@ function GetFile {
 }
 
 function LoadModuleIntoSession {
-    [CmdletBinding()]
-    Param(
-        [Parameter(Mandatory=$true,HelpMessage="An open session with the server running the Active Directory")]
-        [ValidateNotNullOrEmpty()]
-        [System.Management.Automation.Runspaces.PSSession]$ADSession
-    )
     <#
         .synopsis
         This function takes an open session (with the machine which has the ActiveDirectory module) 
         and loads the ActiveDirectory and GeneralFunctions modules into it. It returns the session
         with the modules now loaded.
     #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$true,HelpMessage="An open session with the server running the Active Directory")]
+        [ValidateNotNullOrEmpty()]
+        [System.Management.Automation.Runspaces.PSSession]$ADSession
+    )
     Invoke-Command -Session $ADSession -ScriptBlock {Import-Module -Name ActiveDirectory}
 
     $ScriptContents = Get-Content -Path "$Global:GeneralRoot\GeneralFunctions.psm1"
@@ -79,6 +79,11 @@ function LoadModuleIntoSession {
 }
 
 function NewADUserFromExisting {
+    <# 
+        .Synopsis
+        This function creates a new AD User by copying the settings from an existing user's profile
+
+    #>
     Param(
         [Parameter(Mandatory=$True,HelpMessage="The SAM Account Name for this user")]
         [ValidateNotNullOrEmpty()]
@@ -113,11 +118,6 @@ function NewADUserFromExisting {
         [String]$Department
     )
     
-    <# 
-        .Synopsis
-        This function creates a new AD User by copying the settings from an existing user's profile
-
-    #>
 
     if ($Email -eq $null -or ($Email -eq '')) {
         $Email = MakeEmailAddress -FirstName $FirstName -LastName $LastName -Domain $Domain
@@ -157,6 +157,10 @@ function NewADUserFromExisting {
 
 
 function NewADUserFromExistingWithHashTable {
+    <#
+        .Synopsis
+        This function takes in a HashTable loaded with new users' details and creates them in the active directory
+    #>
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory,HelpMessage='A HashTable loaded with the details of the new users')]
@@ -166,10 +170,6 @@ function NewADUserFromExistingWithHashTable {
         [String]$Organization
     )
 
-    <#
-        .Synopsis
-        This function takes in a HashTable loaded with new users' details and creates them in the active directory
-    #>
 
     $HashTable | ForEach-Object {
         NewADUserFromExisting -PreWin2kLogon $_.ADLogonID `
@@ -185,6 +185,12 @@ function NewADUserFromExistingWithHashTable {
 }
 
 function NewADUserFromExistingWithCsv {
+    <#
+        .Synopsis
+        This function takes the new user parameters from a file and calls the 
+        NewADUserFromExisting-WithHashTable function on it
+    #>
+
     [CmdletBinding()]
     Param(
         [Parameter(HelpMessage='The path to the csv file with the user''s details')]
@@ -194,36 +200,25 @@ function NewADUserFromExistingWithCsv {
         [String]$Organization
     )
 
-    <#
-        .Synopsis
-        This function takes the new user parameters from a file and calls the 
-        NewADUserFromExisting-WithHashTable function on it
-    #>
-
     NewADUserFromExistingWithHashTable -HashTable (Import-Csv -Path $File) -Organization $Organization
 }
 
 
 function GetParentOrganizationalUnit {
+    <#
+        .Synopsis
+        Use this function to get the DirectoryEntry type of the parent folder for an AD User
+    #>
     Param (
         [Parameter(Mandatory=$true,HelpMessage="The existing user account from which you need to draw the Parent OU")]
         [Microsoft.ActiveDirectory.Management.ADUser]$ExistingUser
     )
     
-    <#
-        .Synopsis
-        Use this function to get the DirectoryEntry type of the parent folder for an AD User
-    #>
 
     [ADSI](([ADSI]"LDAP://$($ExistingUser.DistinguishedName)").Parent)
 }
 
 function ValidateEmailAddress {
-    Param(
-        [Parameter(Mandatory=$true,HelpMessage="The user's email address in the format <mailboxName>@<domain>")]
-        [ValidateNotNullOrEmpty()]
-        [String]$Email
-    )
     <#
         .Synopsis
         Validate input in the format <mailboxName>@<domain>.
@@ -233,6 +228,11 @@ function ValidateEmailAddress {
         If an email and Domain are provided, 
     #>
     
+    Param(
+        [Parameter(Mandatory=$true,HelpMessage="The user's email address in the format <mailboxName>@<domain>")]
+        [ValidateNotNullOrEmpty()]
+        [String]$Email
+    )
     $Email = $Email.ToLower() -replace '\s', ''
     if ($Email -match "^[a-z0-9\-_.]+@[a-z0-9]+\.[a-z0-9]+") {
         $Email
@@ -242,6 +242,11 @@ function ValidateEmailAddress {
 }
 
 function MakeEmailAddress {
+    <#
+        .Synopsis
+        Make an email address in the format <firstname>[.lastName]@<domain>
+    #>
+
     Param(
         [Parameter(Mandatory=$true,HelpMessage="The user's first name")]
         [ValidateNotNullOrEmpty()]
@@ -254,11 +259,6 @@ function MakeEmailAddress {
         [ValidateNotNullOrEmpty()]
         [String]$Domain
     )
-    <#
-        .Synopsis
-        Make an email address in the format <firstname>[.lastName]@<domain>
-    #>
-
     $Domain = $Domain.ToLower() -replace '\s',''
     if ($Domain -match "^@?[a-z0-9]+\.[.a-z0-9]+[a-z0-9]$") { 
         
@@ -289,6 +289,15 @@ function MakeEmailAddress {
 
 
 function AssignLicences {
+    <#
+        .Synopsis
+        This function tries to decouple licence assignment from user creation, using a pattern
+        similar to the Factory Method to do so.
+
+        .Description
+        This function takes as parameter an office 365 user and a string with the licence
+        type required, creates the necessary licence options, then assigns them to the user
+    #>
     Param (
         [Parameter(Mandatory=$true)]
         [ValidateNotNullOrEmpty()]
@@ -299,15 +308,6 @@ function AssignLicences {
         [ValidateSet("Basic","SharepointOnly")]
         [String]$LicenceType
     )
-    <#
-        .Synopsis
-        This function tries to decouple licence assignment from user creation, using a pattern
-        similar to the Factory Method to do so.
-
-        .Description
-        This function takes as parameter an office 365 user and a string with the licence
-        type required, creates the necessary licence options, then assigns them to the user
-    #>
 
     # The Prepare*Licences functions below should be replaced by the relevant 
     # organisation-specific functions to return the Office 365 licences for each,
@@ -328,6 +328,14 @@ function AssignLicences {
 }
 
 function TestProvision {
+    <#
+        .Synopsis
+        This function will test whether a script block's return type is not null 
+        once every minute for 30 times, or as many as and for as long as specified 
+        on the NumberOfAttempts and SecndsBetweenAttempts parameter. If the script 
+        returns something other than $null before the end of the count, the function 
+        returns true. Otherwise, it will return false.
+    #>
     Param(
         [Parameter(Mandatory=$true)]
         [ValidateNotNullOrEmpty()]
@@ -337,14 +345,6 @@ function TestProvision {
 
         [int]$SecondsBetweenAttempts=60
     )
-    <#
-        .Synopsis
-        This function will test whether a script block's return type is not null 
-        once every minute for 30 times, or as many as and for as long as specified 
-        on the NumberOfAttempts and SecndsBetweenAttempts parameter. If the script 
-        returns something other than $null before the end of the count, the function 
-        returns true. Otherwise, it will return false.
-    #>
     for ($Count = 1; $Count -le $NumberOfAttempts; $Count++) {
         if ((Invoke-Command -ScriptBlock $Cmdlet) -eq $null) {
             Write-Host "`nAttempt number $Count " -NoNewline
@@ -429,6 +429,11 @@ function SendMessage {
 }
 
 function MakeHtmlFromTemplate {
+    <#
+        .Synopsis
+        This function takes in a template with placeholders, replaces the placeholders with 
+        arguments provided, then returns html output.
+    #>
     [CmdletBinding()]
     Param(
         [Parameter(HelpMessage="The path to the file containing the message template")]
@@ -437,11 +442,6 @@ function MakeHtmlFromTemplate {
         [Parameter(Mandatory,HelpMessage="A hash table containing the placeholder names and the values by which they should be replaced")]
         [System.Collections.Hashtable]$Values
     )
-    <#
-        .Synopsis
-        This function takes in a template with placeholders, replaces the placeholders with 
-        arguments provided, then returns html output.
-    #>
 
     $Body = ""
     Get-Content -Path $PathToTemplate | ForEach-Object {$Body += $_}
@@ -450,6 +450,13 @@ function MakeHtmlFromTemplate {
 }
 
 function GiveMailboxPermissionsWithSMA {
+    <#
+        .Synopsis
+        This function creates an SMA, adds members to it, then gives both 
+        Send As and Full Access permission to the selected mailbox by 
+        adding the SMA to it's permissions and recipient permissions.
+    #>
+
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory,HelpMessage='The name of the security group (e.g. SMA <Mailbox>)')]
@@ -471,13 +478,6 @@ function GiveMailboxPermissionsWithSMA {
         [ValidateNotNullOrEmpty()]
         [Boolean]$ReadOnly=$false
     )
-    <#
-        .Synopsis
-        This function creates an SMA, adds members to it, then gives both 
-        Send As and Full Access permission to the selected mailbox by 
-        adding the SMA to it's permissions and recipient permissions.
-    #>
-
     if (-not ($SMAName.ToLower().Contains("sma"))) {
         $SMAName = "SMA $SMAName"
     }
@@ -543,6 +543,10 @@ function GetUserDGMembership {
 }
 
 function BlockOffice365Account {
+    <#
+        .synopsis
+        This function will block an office 365 account from signing in
+    #>
     [CmdletBinding()]
     Param(    
         [Parameter(Mandatory,HelpMessage='Your Admin Office 365 credentials')]
