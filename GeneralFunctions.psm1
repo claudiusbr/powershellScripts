@@ -295,8 +295,10 @@ function AssignLicences {
         similar to the Factory Method to do so.
 
         .Description
-        This function takes as parameter an office 365 user and a string with the licence
-        type required, creates the necessary licence options, then assigns them to the user
+        This function checks if the user is already licensed and, if not, takes as parameter 
+        an office 365 user and a string with the licence type required, creates the necessary 
+        licence options, then assigns them to the user. Checking if user is licensed can be
+        bypassed by providing the relevant argument.
     #>
     Param (
         [Parameter(Mandatory=$true)]
@@ -305,16 +307,20 @@ function AssignLicences {
 
         [Parameter(Mandatory=$true)]
         [ValidateNotNullOrEmpty()]
-        [ValidateSet("Basic","SharepointOnly")]
-        [String]$LicenceType
+        [ValidateSet("Full","SharepointOnly")]
+        [String]$LicenceType,
+
+        [Parameter(HelpMessage="Set to true if you want to override any possible licence the user may already have")]
+        [Boolean]$Override=$false
     )
 
     # The Prepare*Licences functions below should be replaced by the relevant 
     # organisation-specific functions to return the Office 365 licences for each,
     # and were not included here because their implementations were too specific
-    if ((Get-MsolUser -UserPrincipalName $Email | select -ExpandProperty isLicensed) -eq $false) { 
+    if ((Get-MsolUser -UserPrincipalName $Email | select -ExpandProperty isLicensed) -eq $false `
+        -or $Override) { 
         switch($LicenceType) {
-            "Basic" {$Licences = PrepareBasicLicences; continue}
+            "Full" {$Licences = PrepareFullLicences; continue}
             "SharepointOnly" {$Licences = PrepareSharepointOnlyLicences; continue}
         }
 
