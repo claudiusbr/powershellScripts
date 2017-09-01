@@ -8,11 +8,11 @@ Param()
 function LoginO365 {
     [CmdletBinding()]
     Param (
-        [Parameter(Mandatory=$true,HelpMessage='Your Office 365 Admin credentials')]
+        [Parameter(Mandatory,HelpMessage='Your Office 365 Admin credentials')]
         [ValidateNotNullOrEmpty()]
         [System.Management.Automation.PSCredential] $Cred,
 
-        [Parameter(Mandatory=$true,HelpMessage='Your Sharepoint Online Admin site URL')]
+        [Parameter(Mandatory,HelpMessage='Your Sharepoint Online Admin site URL')]
         [ValidateNotNullOrEmpty()]
         [String]$SPAdminSite
     )
@@ -27,7 +27,7 @@ function ModuleChecker {
     # This function checks if a module is installed
     [CmdletBinding()]
     Param (
-        [Parameter(Mandatory=$true,HelpMessage='The name of the module as you would expect to see on get-module')]
+        [Parameter(Mandatory,HelpMessage='The name of the module as you would expect to see on get-module')]
         [Alias('ModuleName')]
         [String]$ModName,
 
@@ -56,7 +56,7 @@ New-Alias -Name ConnectToComplianceCenter -Value ConnectToComplianceCentre -Forc
 function ConnectToComplianceCentre {
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory=$true,HelpMessage="Your Office 365 admin credentials")]
+        [Parameter(Mandatory,HelpMessage="Your Office 365 admin credentials")]
         [Alias('Credentials')]
         [System.Management.Automation.PSCredential]$Cred
     )
@@ -67,7 +67,7 @@ function ConnectToComplianceCentre {
 function ConnectToExchangeOnline {
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory=$true,HelpMessage="Your Office 365 admin credentials")]
+        [Parameter(Mandatory,HelpMessage="Your Office 365 admin credentials")]
         [Alias('Credentials')]
         [System.Management.Automation.PSCredential]$Cred,
         
@@ -115,7 +115,7 @@ function ConnectToMSOnline {
     [CmdletBinding()]
 
     Param (
-        [Parameter(Mandatory=$true,HelpMessage='Your Admin Office 365 credentials')]
+        [Parameter(Mandatory,HelpMessage='Your Admin Office 365 credentials')]
         [Alias('Credentials')]
         [System.Management.Automation.PSCredential]$Cred
     )
@@ -147,11 +147,11 @@ function ConnectToMSOnline {
 function ConnectToSharepointOnline {
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory=$true,HelpMessage='Your Admin Office 365 credentials')]
+        [Parameter(Mandatory,HelpMessage='Your Admin Office 365 credentials')]
         [Alias('Credentials')]
         [System.Management.Automation.PSCredential]$Cred,
 
-        [Parameter(HelpMessage='The Sharepoint Admin site address.',Mandatory=$true)]
+        [Parameter(Mandatory,HelpMessage='The Sharepoint Admin site address.')]
         [ValidateNotNullOrEmpty()]
         [String]$SPAdminSite,
 
