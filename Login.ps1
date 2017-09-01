@@ -52,8 +52,8 @@ function ModuleChecker {
     }
 }
 
-
-function ConnectToExchangeOnline {
+New-Alias -Name ConnectToComplianceCenter -Value ConnectToComplianceCentre -Force
+function ConnectToComplianceCentre {
     [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$true,HelpMessage="Your Office 365 admin credentials")]
@@ -61,28 +61,49 @@ function ConnectToExchangeOnline {
         [System.Management.Automation.PSCredential]$Cred
     )
 
+    ConnectToExchangeOnline -Cred $Cred -WhereTo ComplianceCentre
+}
+
+function ConnectToExchangeOnline {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$true,HelpMessage="Your Office 365 admin credentials")]
+        [Alias('Credentials')]
+        [System.Management.Automation.PSCredential]$Cred,
+        
+        [Parameter(HelpMessage="Specify whether to connect to Exchange Online or to Compliance Centre")]
+        [ValidateSet('MailCentre','ComplianceCentre')]
+        [String]$WhereTo='MailCentre'
+    )
+
     # setting error action
     $ErrorActionPreference = 'Stop'
 
     # Check if Exchange Online Session already exists
-    $Session = Get-PSSession | Where-Object {$_.ConfigurationName -eq 'Microsoft.Exchange'}
+    $Session = Get-PSSession | Where-Object {$_.ConfigurationName -eq 'Microsoft.Exchange' -and ($_.Name -eq $Service)}
+
+    $URI,$Service = switch ($WhereTo) {
+        'MailCentre' {('https://ps.outlook.com/powershell/','Microsoft Exchange Online'); break}
+        'ComplianceCentre' {('https://ps.compliance.protection.outlook.com/powershell-liveid/','Compliance Centre'); break}
+        default {throw "Error: argument $WhereTo for parameter WhereTo not recognised"; break}
+    }
 
     try {
         if (-not ($Session.State -eq 'Opened')) { # this will also be true if $Session is $null
             if (-not ($Session -eq $null)) {
                 Remove-PSSession $Session
             }
-            Write-Host 'Attempting to connect to Microsoct Exchange Online... ' -NoNewline -BackgroundColor Black -ForegroundColor Cyan
-            $Session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri https://ps.outlook.com/powershell/ `
-                -Credential $Cred -Authentication Basic –AllowRedirection 3> $null
+            Write-Host "Attempting to connect to $Service... " -NoNewline -BackgroundColor Black -ForegroundColor Cyan
+            $Session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri $URI `
+                -Credential $Cred -Authentication Basic –AllowRedirection -Name 'ExchangeOnlinePS' 3> $null
             Import-PSSession $Session -AllowClobber 3>$null | Out-Null
             Write-Host 'Done!' -BackgroundColor Black -ForegroundColor Green
-            Write-Host 'Connected to Microsoft Exchange Online' -BackgroundColor Black -ForegroundColor Green
+            Write-Host "Connected to $Service" -BackgroundColor Black -ForegroundColor Green
         } else {
-            Write-Host 'Already connected to Microsoft Exchange Online' -BackgroundColor Black -ForegroundColor Green
+            Write-Host "Already connected to $Service" -BackgroundColor Black -ForegroundColor Green
         }
     } catch {
-        Write-Warning 'Could not connect to Exchange Online at this time. Please check your connection setting and/or the instructions on the script.'
+        Write-Warning "Could not connect to $Service at this time. Please check your connection setting and/or the instructions on the script."
         throw $_
     }
 }
