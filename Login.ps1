@@ -79,14 +79,14 @@ function ConnectToExchangeOnline {
     # setting error action
     $ErrorActionPreference = 'Stop'
 
-    # Check if Exchange Online Session already exists
-    $Session = Get-PSSession | Where-Object {$_.ConfigurationName -eq 'Microsoft.Exchange' -and ($_.Name -eq $Service)}
-
     $URI,$Service = switch ($WhereTo) {
         'MailCentre' {('https://ps.outlook.com/powershell/','Microsoft Exchange Online'); break}
         'ComplianceCentre' {('https://ps.compliance.protection.outlook.com/powershell-liveid/','Compliance Centre'); break}
         default {throw "Error: argument $WhereTo for parameter WhereTo not recognised"; break}
     }
+    
+    # Check if Exchange Online Session already exists
+    $Session = Get-PSSession | Where-Object {$_.ConfigurationName -eq 'Microsoft.Exchange' -and ($_.Name -eq $Service)}
 
     try {
         if (-not ($Session.State -eq 'Opened')) { # this will also be true if $Session is $null
@@ -95,7 +95,7 @@ function ConnectToExchangeOnline {
             }
             Write-Host "Attempting to connect to $Service... " -NoNewline -BackgroundColor Black -ForegroundColor Cyan
             $Session = New-PSSession -ConfigurationName Microsoft.Exchange -ConnectionUri $URI `
-                -Credential $Cred -Authentication Basic –AllowRedirection -Name 'ExchangeOnlinePS' 3> $null
+                -Credential $Cred -Authentication Basic –AllowRedirection -Name $Service 3> $null
             Import-PSSession $Session -AllowClobber 3>$null | Out-Null
             Write-Host 'Done!' -BackgroundColor Black -ForegroundColor Green
             Write-Host "Connected to $Service" -BackgroundColor Black -ForegroundColor Green
