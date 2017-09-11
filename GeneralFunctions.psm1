@@ -84,6 +84,7 @@ function NewADUserFromExisting {
         This function creates a new AD User by copying the settings from an existing user's profile
 
     #>
+    [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$True,HelpMessage="The SAM Account Name for this user")]
         [ValidateNotNullOrEmpty()]
@@ -209,6 +210,7 @@ function GetParentOrganizationalUnit {
         .Synopsis
         Use this function to get the DirectoryEntry type of the parent folder for an AD User
     #>
+    [CmdletBinding()]
     Param (
         [Parameter(Mandatory=$true,HelpMessage="The existing user account from which you need to draw the Parent OU")]
         [Microsoft.ActiveDirectory.Management.ADUser]$ExistingUser
@@ -227,7 +229,7 @@ function ValidateEmailAddress {
         If only an email is provided, the system will check if it is in the format <mailboxName>@<domain>, where domain will be a string containing at least one dot.
         If an email and Domain are provided, 
     #>
-    
+    [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$true,HelpMessage="The user's email address in the format <mailboxName>@<domain>")]
         [ValidateNotNullOrEmpty()]
@@ -246,7 +248,7 @@ function MakeEmailAddress {
         .Synopsis
         Make an email address in the format <firstname>[.lastName]@<domain>
     #>
-
+    [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$true,HelpMessage="The user's first name")]
         [ValidateNotNullOrEmpty()]
@@ -300,6 +302,7 @@ function AssignLicences {
         licence options, then assigns them to the user. Checking if user is licensed can be
         bypassed by providing the relevant argument.
     #>
+    [CmdletBinding()]
     Param (
         [Parameter(Mandatory=$true)]
         [ValidateNotNullOrEmpty()]
@@ -307,7 +310,7 @@ function AssignLicences {
 
         [Parameter(Mandatory=$true)]
         [ValidateNotNullOrEmpty()]
-        [ValidateSet("Full","SharepointOnly")]
+        [ValidateSet("Full","SharepointOnly","ExchangeForLeavers")]
         [String]$LicenceType,
 
         [Parameter(HelpMessage="Set to true if you want to override any possible licence the user may already have")]
@@ -320,8 +323,9 @@ function AssignLicences {
     if ((Get-MsolUser -UserPrincipalName $Email | select -ExpandProperty isLicensed) -eq $false `
         -or $Override) { 
         switch($LicenceType) {
-            "Full" {$Licences = PrepareFullLicences; continue}
-            "SharepointOnly" {$Licences = PrepareSharepointOnlyLicences; continue}
+            "Full" {$Licences = PrepareFullLicences; break}
+            "SharepointOnly" {$Licences = PrepareSharepointOnlyLicences; break}
+            "ExchangeForLeavers" {$Licences = PrepareExchangeLeaversLicences; break}
         }
 
         $Licences | ForEach-Object { Set-MsolUserLicense -UserPrincipalName $Email `
@@ -333,6 +337,53 @@ function AssignLicences {
     }
 }
 
+function GetUserLicences {
+    <#
+        .Synopsis
+        This function strips the user of all licences they currently hold
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [String]$Email
+    )
+    $User = Get-MsolUser -UserPrincipalName $Email
+    $User.Licenses
+}
+
+function GetUserLicenceNames {
+    <#
+        .Synopsis
+        This function strips the user of all licences they currently hold
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [String]$Email
+    )
+    (GetUserLicences -Email $Email).AccountSkuId
+}
+
+function RemoveAllLicences {
+    <#
+        .Synopsis
+        This function strips the user of all licences they currently hold
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [String]$Email
+    )
+
+    GetUserLicenceNames -Email $Email | ForEach-Object {
+        Set-MsolUserLicense -UserPrincipalName $Email -RemoveLicenses $_
+    }
+
+}
+
 function TestProvision {
     <#
         .Synopsis
@@ -342,6 +393,7 @@ function TestProvision {
         returns something other than $null before the end of the count, the function 
         returns true. Otherwise, it will return false.
     #>
+    [CmdletBinding()]
     Param(
         [Parameter(Mandatory=$true)]
         [ValidateNotNullOrEmpty()]
