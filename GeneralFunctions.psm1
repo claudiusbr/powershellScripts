@@ -599,9 +599,9 @@ function GetUserDGMembership {
     )
 
     Get-DistributionGroup -ResultSize Unlimited | Where-Object {
-        Get-DistributionGroupMember -Identity $_.PrimarySmtpAddress -ResultSize Unlimited | Where-Object {
+        (Get-DistributionGroupMember -Identity $_.PrimarySmtpAddress -ResultSize Unlimited | Where-Object {
             $_.PrimarySmtpAddress -eq $UserEmail
-        }
+        }) -ne $null
     }
 }
 
