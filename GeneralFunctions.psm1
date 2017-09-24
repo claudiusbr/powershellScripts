@@ -597,11 +597,46 @@ function GetUserDGMembership {
         [Parameter(Mandatory,HelpMessage='The user''s Office 365 account')]
         [String]$UserEmail
     )
+    $UserMailbox = Get-Mailbox -Identity $UserEmail -ErrorAction SilentlyContinue
+    $Exists = [bool]$UserMailbox
+    if ($Exists) {
+        Write-Host "Retrieving distribution groups of which $UserEmail is a member..." -BackgroundColor Black -ForegroundColor Cyan
+        $DistributionGroups = Get-DistributionGroup -ResultSize Unlimited | Where-Object {
+            (Get-DistributionGroupMember -Identity $_.PrimarySmtpAddress -ResultSize Unlimited | Where-Object {
+                $_.PrimarySmtpAddress -eq $UserEmail
+            }) -ne $null
+        }
 
-    Get-DistributionGroup -ResultSize Unlimited | Where-Object {
-        (Get-DistributionGroupMember -Identity $_.PrimarySmtpAddress -ResultSize Unlimited | Where-Object {
-            $_.PrimarySmtpAddress -eq $UserEmail
-        }) -ne $null
+        if ($DistributionGroups -ne $null) {
+            Write-Host "Member of: $($DistributionGroups -join ", ")" -BackgroundColor Black -ForegroundColor Cyan
+            $DistributionGroups
+        } else {
+            Write-Host "$UserEmail not found in any distribution groups." -BackgroundColor Black -ForegroundColor Green
+        }
+    } else {
+        Write-Host "$UserEmail does not have a mailbox." -BackgroundColor Black -ForegroundColor Green
+    }
+}
+
+function RemoveUserFromDistributionGroups {
+    <#
+        .synopsis
+        This function iterates through all distribution groups and removes the user from them
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory,HelpMessage='The user''s Office 365 account')]
+        [String]$UserEmail
+    )
+    
+    $DistributionGroups = GetUserDGMembership -UserEmail $UserEmail 
+    if ($DistributionGroups -ne $null) {
+        Write-Host "Removing $UserEmail from distribution groups..."
+        $DistributionGroups | ForEach-Object {
+            Remove-DistributionGroupMember -Identity $_.PrimarySmtpAddress `
+                -Member $UserEmail -Confirm:$false
+        }
+        Write-Host "done."
     }
 }
 
