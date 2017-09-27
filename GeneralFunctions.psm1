@@ -665,3 +665,19 @@ function BlockOffice365Account {
     Set-MsolUser -UserPrincipalName $Email -BlockCredential $true -ErrorAction Stop
     Write-Host "$Email is now blocked."
 }
+
+
+function GetEmailFromADAccount {
+    [CmdletBinding()]
+    Param(
+        [Parameter(HelpMessage='An optional already open session with Active Directory')]
+        [System.Management.Automation.Runspaces.PSSession]$ADSession,
+
+        [Parameter(HelpMessage='The user''s AD Account loging (e.g. jsmith for John Smith)',ParameterSetName='ADAccount',Mandatory)]
+        [String]$LocalUserName
+    )
+    Invoke-Command -Session $ADSession -ScriptBlock {
+        Param($LocalUserName)
+        Get-ADUser -Identity $LocalUserName | Select-Object -ExpandProperty UserPrincipalName
+    } -ArgumentList $LocalUserName
+}
