@@ -701,3 +701,46 @@ function UserHasExchangeLicence {
         $true
     }
 }
+
+
+function SendMessage {
+    <# 
+     .SYNOPSIS
+     This script takes an html message and sends it to the 'To' address in the field
+     You need the proper permissions on the mailbox from which you are sending the 
+     messages
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$true,HelpMessage='Your Admin Office 365 credentials')]
+        [Alias('Credentials')]
+        [System.Management.Automation.PSCredential]$Cred,
+
+        [Parameter(Mandatory=$true,HelpMessage='the path and filename to the message you would like to send')]
+        [String]$Path,
+
+        [Parameter(Mandatory=$true,HelpMessage='The address to which you want to send the message')]
+        [String]$To,
+
+        [Parameter(Mandatory=$true,HelpMessage='The email from which you want to send the message')]
+        [String]$From,
+
+        [Parameter(Mandatory=$true,HelpMessage='The subject of the email to send out')]
+        [String]$Subject,
+
+        [Parameter(HelpMessage='[Optional] If you want it cc''d to anyone')]
+        [String[]]$CC
+    )
+
+    try {
+        $Body = ""
+        Get-Content -Path $Path | ForEach-Object {$Body += $_}
+        Send-MailMessage -To $To -Subject $Subject `
+            -From "$From" -Cc $CC -BodyAsHtml:$true `
+            -SmtpServer 'smtp.office365.com' -Port 587 -UseSsl:$true `
+            -Credential $Cred -Body $Body
+        Write-Host "Message sent to $To." -BackgroundColor Black -ForegroundColor Green
+    } catch [System.Exception] {
+        throw $_
+    }
+}
