@@ -681,3 +681,23 @@ function GetEmailFromADAccount {
         Get-ADUser -Identity $LocalUserName | Select-Object -ExpandProperty UserPrincipalName
     } -ArgumentList $LocalUserName
 }
+
+
+function UserHasExchangeLicence {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [String]$Email
+    )
+
+    $Exchange = GetUserLicences -Email $Email | Select-Object -ExpandProperty ServiceStatus | Where-Object {
+        $_.serviceplan.servicename -like '*exchange*' -and ($_.provisioningstatus -ne 'Disabled')
+    }
+
+    if ($Exchange -eq $null) {
+        $false
+    } else {
+        $true
+    }
+}
