@@ -91,26 +91,26 @@ function NewADUserFromExisting {
     #>
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory=$True,HelpMessage="The SAM Account Name for this user")]
+        [Parameter(Mandatory,HelpMessage="The SAM Account Name for this user")]
         [ValidateNotNullOrEmpty()]
         [String]$PreWin2kLogon,
 
-        [Parameter(Mandatory=$True,HelpMessage="The user's first name")]
+        [Parameter(Mandatory,HelpMessage="The user's first name")]
         [String]$FirstName,
 
-        [Parameter(Mandatory=$True,HelpMessage="The user's last name")]
+        [Parameter(Mandatory,HelpMessage="The user's last name")]
         [String]$LastName,
 
-        [Parameter(HelpMessage="The user's email address. If not specified, the format will be FirstName.LastName@bahai.org.uk")]
+        [Parameter(HelpMessage="The user's email address.")]
         [String]$Email,
 
         [Parameter(HelpMessage="The fully qualified domain name for the email address")]
         [String]$Domain,
 
-        [Parameter(Mandatory=$true,HelpMessage="The user's password as a SecureString")]
+        [Parameter(Mandatory,HelpMessage="The user's password as a SecureString")]
         [System.Security.SecureString]$Password,
 
-        [Parameter(Mandatory=$true,HelpMessage="The existing user instance on which you will base this user")]
+        [Parameter(Mandatory,HelpMessage="The existing user instance on which you will base this user")]
         [ValidateNotNullOrEmpty()]
         [String]$OldUser,
 
@@ -217,7 +217,7 @@ function GetParentOrganizationalUnit {
     #>
     [CmdletBinding()]
     Param (
-        [Parameter(Mandatory=$true,HelpMessage="The existing user account from which you need to draw the Parent OU")]
+        [Parameter(Mandatory,HelpMessage="The existing user account from which you need to draw the Parent OU")]
         [Microsoft.ActiveDirectory.Management.ADUser]$ExistingUser
     )
     
@@ -236,7 +236,7 @@ function ValidateEmailAddress {
     #>
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory=$true,HelpMessage="The user's email address in the format <mailboxName>@<domain>")]
+        [Parameter(Mandatory,HelpMessage="The user's email address in the format <mailboxName>@<domain>")]
         [ValidateNotNullOrEmpty()]
         [String]$Email
     )
@@ -255,14 +255,14 @@ function MakeEmailAddress {
     #>
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory=$true,HelpMessage="The user's first name")]
+        [Parameter(Mandatory,HelpMessage="The user's first name")]
         [ValidateNotNullOrEmpty()]
         [String]$FirstName,
         
         [Parameter(HelpMessage="The user's last name")]
         [String]$LastName, 
         
-        [Parameter(Mandatory=$true,HelpMessage="The email domain, in the format <string1.string2[.stringN]*>")]
+        [Parameter(Mandatory,HelpMessage="The email domain, in the format <string1.string2[.stringN]*>")]
         [ValidateNotNullOrEmpty()]
         [String]$Domain
     )
@@ -309,11 +309,11 @@ function AssignLicences {
     #>
     [CmdletBinding()]
     Param (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
         [String]$Email,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
         [ValidateSet("Full","SharepointOnly","ExchangeForLeavers")]
         [String]$LicenceType,
@@ -378,7 +378,7 @@ function RemoveAllLicences {
     #>
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory)]
         [ValidateNotNullOrEmpty()]
         [String]$Email
     )
@@ -573,7 +573,7 @@ function CopySPAccess {
         [Parameter(HelpMessage='The TargetUser user''s O365 email')]
         [String]$TargetUser=(Read-Host -Prompt 'Please enter the user''s O365 email address'),
 
-        [Parameter(Mandatory=$true,HelpMessage="The URL for your Sharepoint team site")]
+        [Parameter(Mandatory,HelpMessage="The URL for your Sharepoint team site")]
         [ValidateNotNullOrEmpty()]
         [String] $SPSite
 
@@ -712,20 +712,20 @@ function SendMessage {
     #>
     [CmdletBinding()]
     Param(
-        [Parameter(Mandatory=$true,HelpMessage='Your Admin Office 365 credentials')]
+        [Parameter(Mandatory,HelpMessage='Your Admin Office 365 credentials')]
         [Alias('Credentials')]
         [System.Management.Automation.PSCredential]$Cred,
 
-        [Parameter(Mandatory=$true,HelpMessage='the path and filename to the message you would like to send')]
+        [Parameter(Mandatory,HelpMessage='the path and filename to the message you would like to send')]
         [String]$Path,
 
-        [Parameter(Mandatory=$true,HelpMessage='The address to which you want to send the message')]
+        [Parameter(Mandatory,HelpMessage='The address to which you want to send the message')]
         [String]$To,
 
-        [Parameter(Mandatory=$true,HelpMessage='The email from which you want to send the message')]
+        [Parameter(Mandatory,HelpMessage='The email from which you want to send the message')]
         [String]$From,
 
-        [Parameter(Mandatory=$true,HelpMessage='The subject of the email to send out')]
+        [Parameter(Mandatory,HelpMessage='The subject of the email to send out')]
         [String]$Subject,
 
         [Parameter(HelpMessage='[Optional] If you want it cc''d to anyone')]
