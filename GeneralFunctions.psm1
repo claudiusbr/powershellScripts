@@ -744,3 +744,16 @@ function SendMessage {
         throw $_
     }
 }
+
+function LoadProperties {
+    <# 
+     .SYNOPSIS
+     This function loads properties from a file
+    #>
+    [CmdletBinding()]
+    Param(
+        [Parameter(HelpMessage='Path to the properties file to be loaded')]
+        [String]$File=(GetFile).FileName
+    )
+    ConvertFrom-StringData (Get-Content $File -raw)
+}
