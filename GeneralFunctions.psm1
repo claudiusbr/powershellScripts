@@ -325,8 +325,15 @@ function AssignLicences {
     # The Prepare*Licences functions below should be replaced by the relevant 
     # organisation-specific functions to return the Office 365 licences for each,
     # and were not included here because their implementations were too specific
-    if ((Get-MsolUser -UserPrincipalName $Email | select -ExpandProperty isLicensed) -eq $false `
-        -or $Override) { 
+    $MSOlUser = Get-MsolUser -UserPrincipalName $Email
+
+    if (($MSOlUser.IsLicensed) -and $Override) {
+        $LicensesToOverride = $MSOlUser.Licenses.AccountSkuId
+        Set-MsolUserLicense -UserPrincipalName $Email -RemoveLicenses $LicensesToOverride
+        $MSOlUser = Get-MsolUser -UserPrincipalName $Email
+    }
+      
+    if (-not $MSOlUser.IsLicensed) { 
         switch($LicenceType) {
             "Full" {$Licences = PrepareFullLicences; break}
             "SharepointOnly" {$Licences = PrepareSharepointOnlyLicences; break}
