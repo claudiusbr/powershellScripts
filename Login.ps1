@@ -128,7 +128,7 @@ function ConnectToMSOnline {
         ModuleChecker -ModName MSOnline
 
     } catch {
-        Write-Warning "$($Path): Could not load ModuleChecker.ps1. Please change the path if the file has been moved"
+        Write-Warning "$($Path): Could not load MSOnline module."
         throw $_
     }
 
